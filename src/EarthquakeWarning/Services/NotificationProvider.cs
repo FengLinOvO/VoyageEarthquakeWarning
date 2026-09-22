@@ -20,6 +20,14 @@ public sealed class EewNotificationProvider : NotificationProviderBase
 
     private const double BannerSidePadding = 32;
 
+    private readonly object _gate = new();
+    private readonly List<TextBlock> _plainTexts = [];
+    private readonly List<TextBlock> _accentTexts = [];
+
+    private TextBlock? _shockTimeText;
+    private TextBlock? _placeText;
+    private TextBlock? _magnitudeText;
+    private TextBlock? _intensityText;
     private TextBlock? _countdownText;
 
     public EewNotificationProvider()
@@ -32,21 +40,76 @@ public sealed class EewNotificationProvider : NotificationProviderBase
         Instance?.PushInternal(state, firstReport, overrideSettings);
     }
 
-    public static void UpdateCountdown(WarningState state)
+    // 更新报只刷新已显示横幅的内容，不重新推送
+    public static void UpdateReport(WarningState state)
     {
-        Instance?.UpdateCountdownInternal(state);
+        Instance?.UpdateInternal(state);
     }
 
-    private void UpdateCountdownInternal(WarningState state)
+    public static void UpdateCountdown(WarningState state)
     {
-        var text = state.Arrived
+        Instance?.UpdateInternal(state);
+    }
+
+    private void UpdateInternal(WarningState state)
+    {
+        TextBlock[] plainTexts;
+        TextBlock[] accentTexts;
+        TextBlock? shockTimeText;
+        TextBlock? placeText;
+        TextBlock? magnitudeText;
+        TextBlock? intensityText;
+        TextBlock? countdownText;
+
+        lock (_gate)
+        {
+            plainTexts = [.. _plainTexts];
+            accentTexts = [.. _accentTexts];
+            shockTimeText = _shockTimeText;
+            placeText = _placeText;
+            magnitudeText = _magnitudeText;
+            intensityText = _intensityText;
+            countdownText = _countdownText;
+        }
+
+        var foregroundHex = state.ForegroundHex;
+        var accentHex = TierAccentHex(state.Tier);
+        var shockTime = state.ShockTimeText;
+        var place = state.PlaceName;
+        var magnitude = state.MagnitudeText;
+        var intensity = state.LocalIntensityText;
+        var countdown = state.Arrived
             ? "地震横波已到达"
             : $"倒计时：{state.CountdownText}";
 
         Dispatcher.UIThread.Post(() =>
         {
-            if (_countdownText is not null)
-                _countdownText.Text = text;
+            var foreground =
+                new SolidColorBrush(Color.Parse(foregroundHex));
+
+            var accent =
+                new SolidColorBrush(Color.Parse(accentHex));
+
+            foreach (var text in plainTexts)
+                text.Foreground = foreground;
+
+            foreach (var text in accentTexts)
+                text.Foreground = accent;
+
+            if (shockTimeText is not null)
+                shockTimeText.Text = $"发震时间：{shockTime}";
+
+            if (placeText is not null)
+                placeText.Text = $"震中：{place}";
+
+            if (magnitudeText is not null)
+                magnitudeText.Text = $"震级：{magnitude}";
+
+            if (intensityText is not null)
+                intensityText.Text = intensity;
+
+            if (countdownText is not null)
+                countdownText.Text = countdown;
         });
     }
 
@@ -56,20 +119,27 @@ public sealed class EewNotificationProvider : NotificationProviderBase
         var foreground = new SolidColorBrush(Color.Parse(state.ForegroundHex));
         var accent = new SolidColorBrush(Color.Parse(TierAccentHex(state.Tier)));
 
+        var plainTexts = new List<TextBlock>();
+        var accentTexts = new List<TextBlock>();
+
+        var maskTitleText = new TextBlock
+        {
+            Text = "地震预警",
+            FontSize = 38,
+            FontWeight = Avalonia.Media.FontWeight.Bold,
+            Foreground = accent,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        accentTexts.Add(maskTitleText);
+
         var mask = new NotificationContent
         {
             Content = new Border
             {
                 Padding = new Avalonia.Thickness(BannerSidePadding, 0, BannerSidePadding, 0),
-                Child = new TextBlock
-                {
-                    Text = "地震预警",
-                    FontSize = 38,
-                    FontWeight = Avalonia.Media.FontWeight.Bold,
-                    Foreground = accent,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center
-                }
+                Child = maskTitleText
             },
             Duration = TimeSpan.FromSeconds(1.2),
             Color = new SolidColorBrush(color)
@@ -83,33 +153,45 @@ public sealed class EewNotificationProvider : NotificationProviderBase
             VerticalAlignment = VerticalAlignment.Center
         };
 
-        void AddPlain(string text, IBrush brush)
+        TextBlock AddText(string text, IBrush brush, bool accentText)
         {
-            line.Children.Add(new TextBlock
+            var block = new TextBlock
             {
                 Text = text,
                 FontSize = 24,
                 Foreground = brush,
                 VerticalAlignment = VerticalAlignment.Center
-            });
+            };
+
+            line.Children.Add(block);
+
+            if (accentText)
+                accentTexts.Add(block);
+            else
+                plainTexts.Add(block);
+
+            return block;
         }
 
-        AddPlain("地震预警", accent);
-        AddPlain($"发震时间：{state.ShockTimeText}", foreground);
-        AddPlain($"震中：{state.PlaceName}", foreground);
-        AddPlain($"震源深度：{state.DepthKm:0.#}km", foreground);
-        AddPlain("预估本地烈度：", accent);
+        AddText("地震预警", accent, true);
+        var shockTimeText = AddText($"发震时间：{state.ShockTimeText}", foreground, false);
+        var placeText = AddText($"震中：{state.PlaceName}", foreground, false);
+        var magnitudeText = AddText($"震级：{state.MagnitudeText}", foreground, false);
+        AddText("预估本地烈度：", accent, true);
 
-        line.Children.Add(new TextBlock
+        var intensityText = new TextBlock
         {
             Text = state.LocalIntensityText,
             FontSize = 26,
             FontWeight = Avalonia.Media.FontWeight.Bold,
             Foreground = accent,
             VerticalAlignment = VerticalAlignment.Center
-        });
+        };
 
-        _countdownText = new TextBlock
+        line.Children.Add(intensityText);
+        accentTexts.Add(intensityText);
+
+        var countdownText = new TextBlock
         {
             Text = state.Arrived
                 ? "地震横波已到达"
@@ -120,7 +202,8 @@ public sealed class EewNotificationProvider : NotificationProviderBase
             VerticalAlignment = VerticalAlignment.Center
         };
 
-        line.Children.Add(_countdownText);
+        line.Children.Add(countdownText);
+        accentTexts.Add(countdownText);
 
         var durationSeconds = Math.Max(
             8,
@@ -154,6 +237,19 @@ public sealed class EewNotificationProvider : NotificationProviderBase
                 IsSpeechEnabled = false
             }
         };
+
+        lock (_gate)
+        {
+            _plainTexts.Clear();
+            _plainTexts.AddRange(plainTexts);
+            _accentTexts.Clear();
+            _accentTexts.AddRange(accentTexts);
+            _shockTimeText = shockTimeText;
+            _placeText = placeText;
+            _magnitudeText = magnitudeText;
+            _intensityText = intensityText;
+            _countdownText = countdownText;
+        }
 
         ShowNotification(request);
     }

@@ -22,7 +22,6 @@ public sealed class WarningEngine
     private WarningTier? _lastTier;
     private double _lastCountdown;
     private DateTime _lastReceivedBeijing;
-    private bool _arrivalAudioPlayed;
     private bool _audioSuppressed;
     private bool _isActive;
     private Task? _ticker;
@@ -61,7 +60,7 @@ public sealed class WarningEngine
         var now = NowBeijing();
         var age = (now - shockTime).TotalSeconds;
 
-        if (!isSimulation && (age > 90 || age < -5))
+        if (!isSimulation && (age > 200 || age < -5))
             return Task.CompletedTask;
 
         if (!TryGetLocation(settings, out var userLat, out var userLng))
@@ -88,7 +87,17 @@ public sealed class WarningEngine
             shockTime,
             now);
 
-        if (!isSimulation && countdown > 20)
+        // 需要发声的预警窗口：倒计时在 20 秒以内且尚未到达
+        var isInWindow = countdown is > 0 and <= 20;
+        var isArrived = countdown <= 0;
+
+        bool isWarningActive;
+
+        lock (_sync)
+            isWarningActive = _isActive;
+
+        // 超出预警窗口（距离过远或地震波已到达）且当前没有进行中的预警时忽略该报文
+        if (!isSimulation && !isInWindow && !isWarningActive)
             return Task.CompletedTask;
 
         var tier = GetTier(localIntensity);
@@ -144,9 +153,6 @@ public sealed class WarningEngine
             _lastReceivedBeijing = now;
             _isActive = true;
 
-            if (isFirst)
-                _arrivalAudioPlayed = false;
-
             if (allowReopen)
                 _audioSuppressed = false;
         }
@@ -158,10 +164,17 @@ public sealed class WarningEngine
 
         if (settings.WarningMode == WarningMode.NativeBanner)
         {
-            EewNotificationProvider.Push(
-                state,
-                isFirst,
-                settings.AdvancedOverride);
+            if (isUpdateReport)
+            {
+                EewNotificationProvider.UpdateReport(state);
+            }
+            else
+            {
+                EewNotificationProvider.Push(
+                    state,
+                    isFirst,
+                    settings.AdvancedOverride);
+            }
         }
         else
         {
@@ -181,7 +194,15 @@ public sealed class WarningEngine
         if (isFirst)
             StartTicker(cancellationToken);
 
-        if (settings.EnableAlertSound && !_audioSuppressed)
+        // 距离过远的报文只刷新界面不发声；已到达的报文只在预警进行中发声
+        var mayPlayAudio =
+            isSimulation ||
+            isInWindow ||
+            (isArrived && isWarningActive);
+
+        if (settings.EnableAlertSound &&
+            !_audioSuppressed &&
+            mayPlayAudio)
         {
             PlayReportAudio(
                 state,
@@ -282,7 +303,6 @@ public sealed class WarningEngine
             _lastTier = null;
             _lastCountdown = 0;
             _lastReceivedBeijing = default;
-            _arrivalAudioPlayed = false;
             _audioSuppressed = false;
         }
 
@@ -316,32 +336,38 @@ public sealed class WarningEngine
 
                     var now = NowBeijing();
 
-                    state.UpdateCountdown(now);
-
-                    if (Plugin.Current!.Settings.WarningMode ==
-                        WarningMode.IndependentUi)
+                    try
                     {
-                        _window.ShowOrUpdate(
-                            state,
-                            Plugin.Current!.Settings.TopMost,
-                            false);
-                    }
-                    else
-                    {
-                        EewNotificationProvider.UpdateCountdown(state);
-                    }
+                        state.UpdateCountdown(now);
 
-                    if (state.Arrived)
-                    {
-                        var releaseAt =
-                            state.ArrivalTimeBeijing.AddSeconds(
-                                Plugin.Current!.Settings.ReleaseSeconds);
-
-                        if (now >= releaseAt)
+                        if (Plugin.Current!.Settings.WarningMode ==
+                            WarningMode.IndependentUi)
                         {
-                            StopWarning();
-                            break;
+                            _window.ShowOrUpdate(
+                                state,
+                                Plugin.Current!.Settings.TopMost,
+                                false);
                         }
+                        else
+                        {
+                            EewNotificationProvider.UpdateCountdown(state);
+                        }
+
+                        if (state.Arrived)
+                        {
+                            var releaseAt =
+                                state.ArrivalTimeBeijing.AddSeconds(
+                                    Plugin.Current!.Settings.ReleaseSeconds);
+
+                            if (now >= releaseAt)
+                            {
+                                StopWarning();
+                                break;
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
                     }
 
                     await Task.Delay(200, parentToken);
@@ -364,7 +390,6 @@ public sealed class WarningEngine
         {
             _isActive = false;
             _state = null;
-            _arrivalAudioPlayed = false;
             _audioSuppressed = false;
         }
 
@@ -415,14 +440,10 @@ public sealed class WarningEngine
     {
         if (countdown <= 0)
         {
-            if (_arrivalAudioPlayed)
-                return [];
-
-            // 上一报音频（末尾自带到达播报）已播完时不再补播到达音频
+            // 上一报的音频还在播时，按到达逻辑打断重播；
+            // 已经播完（其末尾自带到达播报）则不再补播
             if (!isFirst && !_audio.IsPlaying)
                 return [];
-
-            _arrivalAudioPlayed = true;
 
             return ArrivalCues(tier);
         }
