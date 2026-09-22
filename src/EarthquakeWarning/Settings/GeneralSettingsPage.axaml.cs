@@ -60,8 +60,15 @@ public partial class GeneralSettingsPage : NotificationProviderControlBase
 
         AddSimulationButton.Click += (_, _) =>
         {
+            var last = Settings.Simulations.LastOrDefault();
+
             Settings.Simulations.Add(
-                new SimulationReport());
+                new SimulationReport
+                {
+                    Updates = Settings.Simulations.Count + 1,
+                    AlertDelaySeconds =
+                        (last?.AlertDelaySeconds ?? 0) + 5
+                });
 
             RenderSimulations();
             Store.Save();
@@ -285,39 +292,21 @@ public partial class GeneralSettingsPage : NotificationProviderControlBase
                 return box;
             }
 
-            if (index == 0)
-            {
-                panel.Children.Add(
-                    Field(
-                        "预警距发震延迟（秒）",
-                        sim.AlertDelaySeconds.ToString(
-                            "0.0",
-                            CultureInfo.InvariantCulture),
-                        x =>
-                        {
-                            if (double.TryParse(
-                                    x,
-                                    NumberStyles.Float,
-                                    CultureInfo.InvariantCulture,
-                                    out var v))
-                            {
-                                sim.AlertDelaySeconds =
-                                    Math.Max(0, v);
-                            }
-                        }));
-            }
-
             panel.Children.Add(
                 Field(
-                    "预警延迟秒数",
-                    sim.DelaySeconds.ToString(),
+                    "发报延迟（秒，距发震）",
+                    sim.AlertDelaySeconds.ToString(
+                        "0.0",
+                        CultureInfo.InvariantCulture),
                     x =>
                     {
-                        if (int.TryParse(
+                        if (double.TryParse(
                                 x,
+                                NumberStyles.Float,
+                                CultureInfo.InvariantCulture,
                                 out var v))
                         {
-                            sim.DelaySeconds =
+                            sim.AlertDelaySeconds =
                                 Math.Max(0, v);
                         }
                     }));
@@ -430,25 +419,6 @@ public partial class GeneralSettingsPage : NotificationProviderControlBase
                         {
                             sim.Updates =
                                 Math.Max(1, v);
-                        }
-                    }));
-
-            panel.Children.Add(
-                Field(
-                    "本报后间隔秒数",
-                    sim.IntervalAfterThisSeconds.ToString(
-                        "0.0",
-                        CultureInfo.InvariantCulture),
-                    x =>
-                    {
-                        if (double.TryParse(
-                                x,
-                                NumberStyles.Float,
-                                CultureInfo.InvariantCulture,
-                                out var v))
-                        {
-                            sim.IntervalAfterThisSeconds =
-                                Math.Max(0, v);
                         }
                     }));
 

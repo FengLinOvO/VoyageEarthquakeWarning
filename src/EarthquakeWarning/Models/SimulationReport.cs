@@ -2,7 +2,6 @@ namespace Voyage.EarthquakeWarning.Models;
 
 public sealed class SimulationReport : ObservableObject
 {
-    private int _delaySeconds = 0;
     private string _placeName = "甘肃临夏州积石山县";
     private double _longitude = 102.80;
     private double _latitude = 35.75;
@@ -10,10 +9,8 @@ public sealed class SimulationReport : ObservableObject
     private double _epiIntensity = 7.9;
     private double? _depth = 10;
     private int _updates = 1;
-    private double _intervalAfterThisSeconds = 5;
     private double _alertDelaySeconds = 4.9;
 
-    public int DelaySeconds { get => _delaySeconds; set => SetProperty(ref _delaySeconds, value); }
     public string PlaceName { get => _placeName; set => SetProperty(ref _placeName, value); }
     public double Longitude { get => _longitude; set => SetProperty(ref _longitude, value); }
     public double Latitude { get => _latitude; set => SetProperty(ref _latitude, value); }
@@ -21,6 +18,5 @@ public sealed class SimulationReport : ObservableObject
     public double EpiIntensity { get => _epiIntensity; set => SetProperty(ref _epiIntensity, value); }
     public double? Depth { get => _depth; set => SetProperty(ref _depth, value); }
     public int Updates { get => _updates; set => SetProperty(ref _updates, value); }
-    public double IntervalAfterThisSeconds { get => _intervalAfterThisSeconds; set => SetProperty(ref _intervalAfterThisSeconds, value); }
     public double AlertDelaySeconds { get => _alertDelaySeconds; set => SetProperty(ref _alertDelaySeconds, value); }
 }

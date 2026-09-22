@@ -204,7 +204,6 @@ public sealed class WarningEngine
         var list = source
             .Select(x => new SimulationReport
             {
-                DelaySeconds = x.DelaySeconds,
                 PlaceName = x.PlaceName,
                 Longitude = x.Longitude,
                 Latitude = x.Latitude,
@@ -212,7 +211,6 @@ public sealed class WarningEngine
                 EpiIntensity = x.EpiIntensity,
                 Depth = x.Depth,
                 Updates = x.Updates,
-                IntervalAfterThisSeconds = x.IntervalAfterThisSeconds,
                 AlertDelaySeconds = x.AlertDelaySeconds
             })
             .ToList();
@@ -220,7 +218,8 @@ public sealed class WarningEngine
         var simulationEventId =
             "SIM-" + DateTime.Now.ToString("yyyyMMddHHmmssfff");
 
-        DateTime? shockOrigin = null;
+        // 点击「立即模拟」的时刻即作为发震时刻
+        var shockTime = DateTime.UtcNow.AddHours(8);
 
         try
         {
@@ -228,20 +227,18 @@ public sealed class WarningEngine
             {
                 token.ThrowIfCancellationRequested();
 
-                if (sim.DelaySeconds > 0)
+                var elapsed =
+                    (DateTime.UtcNow.AddHours(8) - shockTime)
+                    .TotalSeconds;
+
+                var wait = sim.AlertDelaySeconds - elapsed;
+
+                if (wait > 0)
                 {
                     await Task.Delay(
-                        TimeSpan.FromSeconds(sim.DelaySeconds),
+                        TimeSpan.FromSeconds(wait),
                         token);
                 }
-
-                // 第一报的预警延迟决定发震时刻，后续各报共用该时刻
-                var publishAt = DateTime.UtcNow.AddHours(8);
-
-                shockOrigin ??=
-                    publishAt.AddSeconds(-sim.AlertDelaySeconds);
-
-                var shock = shockOrigin.Value;
 
                 var data = new EewData
                 {
@@ -249,7 +246,7 @@ public sealed class WarningEngine
                     EventId =
                         $"{simulationEventId}.{sim.Updates:0000}",
                     ShockTime =
-                        shock.ToString(
+                        shockTime.ToString(
                             "yyyy-MM-dd HH:mm:ss"),
                     Longitude = sim.Longitude,
                     Latitude = sim.Latitude,
@@ -266,14 +263,6 @@ public sealed class WarningEngine
                     data,
                     true,
                     token);
-
-                if (sim.IntervalAfterThisSeconds > 0)
-                {
-                    await Task.Delay(
-                        TimeSpan.FromSeconds(
-                            sim.IntervalAfterThisSeconds),
-                        token);
-                }
             }
         }
         catch (OperationCanceledException)
@@ -410,10 +399,11 @@ public sealed class WarningEngine
         if (cues.Count == 0)
             return;
 
-        if (isUpdateReport)
-            cues.Insert(0, new AudioCue(UpdateAudio, 0));
-
         _audio.PlaySequence(cues, token);
+
+        // 更新报音频叠加播放，不打断上面的序列
+        if (isUpdateReport)
+            _audio.PlayOverlay(UpdateAudio, token);
     }
 
     private List<AudioCue> BuildAudioCues(

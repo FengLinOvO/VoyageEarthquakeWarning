@@ -9,7 +9,7 @@ public sealed class PluginSettings : ObservableObject
     private string _longitude = "103.83";
     private string _apiToken = "";
     private int _triggerThreshold = 2;
-    private WarningMode _warningMode = WarningMode.NativeBanner;
+    private WarningMode _warningMode = WarningMode.IndependentUi;
     private int _releaseSeconds = 15;
     private bool _advancedOverride;
     private bool _enableAlertSound = true;
@@ -37,51 +37,43 @@ public sealed class PluginSettings : ObservableObject
     [
         new SimulationReport
         {
-            DelaySeconds = 0,
             AlertDelaySeconds = 4.9,
             Latitude = 35.75,
             Longitude = 102.80,
             Magnitude = 5.9,
             EpiIntensity = 7.9,
             Depth = 10,
-            Updates = 1,
-            IntervalAfterThisSeconds = 8.6
+            Updates = 1
         },
         new SimulationReport
         {
-            DelaySeconds = 0,
-            AlertDelaySeconds = 0,
+            AlertDelaySeconds = 13.5,
             Latitude = 35.74,
             Longitude = 102.81,
             Magnitude = 6.3,
             EpiIntensity = 8.3,
             Depth = 10,
-            Updates = 2,
-            IntervalAfterThisSeconds = 0.5
+            Updates = 2
         },
         new SimulationReport
         {
-            DelaySeconds = 0,
-            AlertDelaySeconds = 0,
+            AlertDelaySeconds = 14.0,
             Latitude = 35.74,
             Longitude = 102.81,
             Magnitude = 6.8,
             EpiIntensity = 8.8,
             Depth = 10,
-            Updates = 3,
-            IntervalAfterThisSeconds = 23.1
+            Updates = 3
         },
         new SimulationReport
         {
-            DelaySeconds = 0,
-            AlertDelaySeconds = 0,
+            AlertDelaySeconds = 37.1,
             Latitude = 35.74,
             Longitude = 102.82,
             Magnitude = 6.0,
             EpiIntensity = 7.9,
             Depth = 10,
-            Updates = 4,
-            IntervalAfterThisSeconds = 0
+            Updates = 4
         }
     ];
 

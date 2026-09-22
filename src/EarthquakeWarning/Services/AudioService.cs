@@ -13,6 +13,8 @@ public sealed class AudioService
     private CancellationTokenSource? _currentCts;
     private WaveOutEvent? _currentOutput;
     private Task _playbackTask = Task.CompletedTask;
+    private readonly List<CancellationTokenSource> _overlayCts = [];
+    private readonly List<WaveOutEvent> _overlayOutputs = [];
     private float? _originalMasterVolume;
     private DateTime _lastVolumeRestoreDeadline = DateTime.MinValue;
     private volatile bool _playing;
@@ -92,7 +94,7 @@ public sealed class AudioService
             {
                 cts.Token.ThrowIfCancellationRequested();
 
-                await PlayFileAsync(cue, cts.Token)
+                await PlayFileAsync(cue, cts.Token, false)
                     .ConfigureAwait(false);
             }
         }
@@ -118,7 +120,8 @@ public sealed class AudioService
 
     private async Task PlayFileAsync(
         AudioCue cue,
-        CancellationToken token)
+        CancellationToken token,
+        bool overlay)
     {
         using var reader =
             new AudioFileReader(GetAudioPath(cue.FileName));
@@ -160,23 +163,85 @@ public sealed class AudioService
         });
 
         lock (_gate)
-            _currentOutput = output;
+        {
+            if (overlay)
+                _overlayOutputs.Add(output);
+            else
+                _currentOutput = output;
+        }
 
         output.Play();
 
-        await completion.Task.ConfigureAwait(false);
-        token.ThrowIfCancellationRequested();
+        try
+        {
+            await completion.Task.ConfigureAwait(false);
+            token.ThrowIfCancellationRequested();
+        }
+        finally
+        {
+            lock (_gate)
+            {
+                if (overlay)
+                {
+                    _overlayOutputs.Remove(output);
+                }
+                else if (ReferenceEquals(_currentOutput, output))
+                {
+                    _currentOutput = null;
+                }
+            }
+        }
+    }
+
+    // 叠加播放，不打断当前正在播放的音频
+    public void PlayOverlay(
+        string fileName,
+        CancellationToken cancellationToken)
+    {
+        var cts = CancellationTokenSource
+            .CreateLinkedTokenSource(cancellationToken);
+
+        lock (_gate)
+            _overlayCts.Add(cts);
+
+        _ = RunOverlayAsync(new AudioCue(fileName, 0), cts);
+    }
+
+    private async Task RunOverlayAsync(
+        AudioCue cue,
+        CancellationTokenSource cts)
+    {
+        try
+        {
+            await PlayFileAsync(cue, cts.Token, true)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch
+        {
+        }
+        finally
+        {
+            lock (_gate)
+                _overlayCts.Remove(cts);
+        }
     }
 
     public void StopAll()
     {
         CancellationTokenSource? cts;
         WaveOutEvent? output;
+        CancellationTokenSource[] overlays;
+        WaveOutEvent[] overlayOutputs;
 
         lock (_gate)
         {
             cts = _currentCts;
             output = _currentOutput;
+            overlays = [.. _overlayCts];
+            overlayOutputs = [.. _overlayOutputs];
             _playing = false;
         }
 
@@ -188,12 +253,34 @@ public sealed class AudioService
         {
         }
 
+        foreach (var overlayOutput in overlayOutputs)
+        {
+            try
+            {
+                overlayOutput.Stop();
+            }
+            catch
+            {
+            }
+        }
+
         try
         {
             cts?.Cancel();
         }
         catch
         {
+        }
+
+        foreach (var overlay in overlays)
+        {
+            try
+            {
+                overlay.Cancel();
+            }
+            catch
+            {
+            }
         }
     }
 
