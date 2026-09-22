@@ -1,0 +1,170 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Voyage.EarthquakeWarning.Settings.GeneralSettingsPage">
+  <ScrollViewer Padding="22,12,22,24">
+    <StackPanel Spacing="16">
+      <Border Background="#1AFFFFFF"
+              CornerRadius="10"
+              Padding="14">
+        <StackPanel Spacing="6">
+          <TextBlock Text="免责声明"
+                     FontSize="18"
+                     FontWeight="Bold"/>
+          <TextBlock Text="· 地震预警信息由中国地震台网中心产出并下发，API由作者开发的Voyage Project API提供；作者不对地震预警信息的准确性、有效性等作任何承诺与保证，对于使用本API造成的一切后果与作者无关。&#10;· 本插件仅分发地震预警信息，并非地震预测。&#10;· 作者对因信息延迟、误报或漏报所造成的任何损失不承担法律责任，请以官方发布信息为准。&#10;· 本插件以 LGPL-3.0-only 许可证开源。"
+                     TextWrapping="Wrap"/>
+        </StackPanel>
+      </Border>
+
+      <StackPanel Spacing="8">
+        <TextBlock Text="API状态"
+                   FontSize="18"
+                   FontWeight="Bold"/>
+        <Border Background="#10000000"
+                CornerRadius="10"
+                Padding="14">
+          <StackPanel Spacing="6">
+            <TextBlock x:Name="ApiConnectionText"
+                       Text="API连接于：未连接"
+                       TextWrapping="Wrap"/>
+            <TextBlock x:Name="ApiRecentText"
+                       Text="API最近数据：暂无数据"
+                       TextWrapping="Wrap"/>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <StackPanel Spacing="8">
+        <TextBlock Text="API Token"
+                   FontSize="18"
+                   FontWeight="Bold"/>
+        <Border Background="#10000000"
+                CornerRadius="10"
+                Padding="14">
+          <StackPanel Spacing="8">
+            <TextBox x:Name="TokenBox"
+                     Watermark="填写由 https://api.odysphere.tech/apply 申请得到的 API Token"/>
+            <TextBlock Text="未填写 API Token 时插件不会连接预警服务，将无法收到预警。&#10;申请地址：https://api.odysphere.tech/apply（申请密码：FengLin_OvO）&#10;ClassIsland 用户在申请时，请务必在使用用途栏填写“ClassIsland地震预警插件”，否则将视为普通用户，有概率不受理申请。"
+                       TextWrapping="Wrap"
+                       FontSize="13"/>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <StackPanel Spacing="8">
+        <TextBlock Text="预警配置"
+                   FontSize="18"
+                   FontWeight="Bold"/>
+        <Border Background="#10000000"
+                CornerRadius="10"
+                Padding="14">
+          <Grid ColumnDefinitions="170,1*"
+                RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                RowSpacing="12"
+                ColumnSpacing="12">
+            <TextBlock Text="地理位置"
+                       Grid.Row="0"
+                       VerticalAlignment="Center"/>
+            <Button x:Name="AutoLocateButton"
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Content="自动定位"
+                    HorizontalAlignment="Left"/>
+
+            <TextBlock Text="纬度"
+                       Grid.Row="1"
+                       VerticalAlignment="Center"/>
+            <TextBox x:Name="LatitudeBox"
+                     Grid.Row="1"
+                     Grid.Column="1"
+                     Watermark="例如 36.06"/>
+
+            <TextBlock Text="经度"
+                       Grid.Row="2"
+                       VerticalAlignment="Center"/>
+            <TextBox x:Name="LongitudeBox"
+                     Grid.Row="2"
+                     Grid.Column="1"
+                     Watermark="例如 103.83"/>
+
+            <TextBlock Text="烈度阈值"
+                       Grid.Row="3"
+                       VerticalAlignment="Center"/>
+            <ComboBox x:Name="ThresholdBox"
+                      Grid.Row="3"
+                      Grid.Column="1"/>
+
+            <TextBlock Text="预警方式"
+                       Grid.Row="4"
+                       VerticalAlignment="Center"/>
+            <ComboBox x:Name="ModeBox"
+                      Grid.Row="4"
+                      Grid.Column="1"/>
+
+            <TextBlock Text="预警解除时间（秒）"
+                       Grid.Row="5"
+                       VerticalAlignment="Center"/>
+            <NumericUpDown x:Name="ReleaseBox"
+                           Grid.Row="5"
+                           Grid.Column="1"
+                           Minimum="0"
+                           Maximum="300"
+                           Increment="1"/>
+          </Grid>
+        </Border>
+      </StackPanel>
+
+      <Border Background="#10000000"
+              CornerRadius="10"
+              Padding="14">
+        <StackPanel Spacing="5">
+          <TextBlock Text="预警等级说明"
+                     FontWeight="Bold"/>
+          <TextBlock Text="蓝色地震预警（无感）：＜0.5度&#10;蓝色地震预警（有感）：0.5-2.4度&#10;黄色地震预警：2.5-4.4度&#10;橙色地震预警：4.5-6.4度&#10;红色地震预警：≥6.5度"
+                     TextWrapping="Wrap"/>
+        </StackPanel>
+      </Border>
+
+      <Expander Header="模拟预警">
+        <StackPanel x:Name="SimulationPanel"
+                    Spacing="10"
+                    Margin="0,10,0,0"/>
+      </Expander>
+
+      <StackPanel Spacing="8">
+        <TextBlock Text="提醒设置"
+                   FontSize="18"
+                   FontWeight="Bold"/>
+        <Border Background="#10000000"
+                CornerRadius="10"
+                Padding="14">
+          <StackPanel Spacing="14">
+            <CheckBox x:Name="OverrideBox"
+                      Content="启用插件提醒设置（启用后，本插件此处的设置将覆盖全局设置）"/>
+            <CheckBox x:Name="SoundBox"
+                      Content="启用提醒声（播放插件内置地震预警音频）"/>
+            <CheckBox x:Name="TopmostBox"
+                      Content="地震预警UI置顶"/>
+            <CheckBox x:Name="ForceVolumeBox"
+                      Content="强制声音（100%，预警结束10秒后恢复，可用性未知）"/>
+            <TextBlock Text="注意：提醒-高级设置内的“启用提醒语音”不适用于本插件；在启用独立UI绘制时如需弹窗置顶，提醒-高级设置内的“置顶提醒”不适用于独立UI，请启用提醒-基本设置-提醒设置内的“地震预警UI置顶”。"
+                       TextWrapping="Wrap"
+                       Foreground="#E06C6C"/>
+            <Button x:Name="SaveAdvancedButton"
+                    Content="保存提醒设置"
+                    HorizontalAlignment="Left"/>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <StackPanel Orientation="Horizontal"
+                  Spacing="10">
+        <Button x:Name="AddSimulationButton"
+                Content="新增模拟报"/>
+        <Button x:Name="SaveButton"
+                Content="保存配置"/>
+        <Button x:Name="RunSimulationButton"
+                Content="立即模拟"/>
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

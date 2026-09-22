@@ -1,0 +1,70 @@
+name: Build and Release ClassIsland Plugin
+
+on:
+  push:
+    tags:
+      - '*.*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Validate version
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}'
+          if ($tag -notmatch '^\d+\.\d+\.\d+\.\d+$') {
+            throw "Release tag must be a.b.c.d. Current: $tag"
+          }
+          $manifest = Get-Content -Raw 'src/EarthquakeWarning/manifest.yml'
+          if ($manifest -notmatch '(?m)^version:\s*([^\r\n]+)') {
+            throw 'manifest.yml version not found.'
+          }
+          $manifestVersion = $Matches[1].Trim()
+          if ($manifestVersion -ne $tag) {
+            throw "manifest.yml version ($manifestVersion) does not match tag ($tag)."
+          }
+
+      - name: Build cipx
+        shell: pwsh
+        run: .\build.ps1
+
+      - name: Prepare release assets
+        shell: pwsh
+        run: |
+          $cipxDir = Join-Path $PWD 'src/EarthquakeWarning/cipx'
+          $files = @(Get-ChildItem $cipxDir -Filter '*.cipx' -File)
+          if ($files.Count -lt 1) {
+            throw "No .cipx found in $cipxDir"
+          }
+          $releaseDir = Join-Path $PWD 'release-assets'
+          New-Item -ItemType Directory -Force $releaseDir | Out-Null
+          $package = Join-Path $releaseDir 'Voyage.EarthquakeWarning.cipx'
+          Copy-Item $files[0].FullName $package -Force
+          $md5 = (Get-FileHash $package -Algorithm MD5).Hash.ToLowerInvariant()
+          $body = '<!-- CLASSISLAND_PKG_MD5 {"Voyage.EarthquakeWarning.cipx": "' + $md5 + '"} -->'
+          Set-Content -Path (Join-Path $releaseDir 'checksums.md') -Value $body -Encoding UTF8
+          Write-Host "MD5: $md5"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: 地震预警 ${{ github.ref_name }}
+          generate_release_notes: true
+          body_path: release-assets/checksums.md
+          files: |
+            release-assets/Voyage.EarthquakeWarning.cipx
+            release-assets/checksums.md

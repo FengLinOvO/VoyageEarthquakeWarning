@@ -1,0 +1,222 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Voyage.EarthquakeWarning.UI.EarthquakeWarningWindow"
+        Width="1280"
+        Height="700"
+        MinWidth="1100"
+        MinHeight="620"
+        Background="Transparent"
+        SystemDecorations="None"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterScreen">
+  <Border x:Name="RootBorder"
+          Background="#3764FF"
+          BorderBrush="#3C3C3C"
+          BorderThickness="4"
+          CornerRadius="22"
+          Padding="48"
+          Opacity="0"
+          RenderTransformOrigin="0.5,0.5"
+          RenderTransform="scale(0.94)">
+    <Border.Transitions>
+      <Transitions>
+        <DoubleTransition Property="Opacity"
+                          Duration="0:0:0.14"/>
+        <TransformOperationsTransition Property="RenderTransform"
+                                       Duration="0:0:0.14"/>
+      </Transitions>
+    </Border.Transitions>
+
+    <Grid RowDefinitions="132,1*,182">
+      <Grid Grid.Row="0">
+        <Image x:Name="TierImage"
+               Width="112"
+               Height="90"
+               HorizontalAlignment="Left"
+               VerticalAlignment="Top"
+               Stretch="Uniform"/>
+        <TextBlock x:Name="TitleText"
+                   Text="地震预警"
+                   FontSize="70"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"/>
+        <StackPanel HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Spacing="6">
+          <TextBlock x:Name="NetworkText"
+                     Text="中国地震预警网 第1报"
+                     FontSize="28"
+                     FontWeight="Bold"
+                     HorizontalAlignment="Right"/>
+          <TextBlock x:Name="NoticeText"
+                     Text="最终结果以正式速报为准"
+                     FontSize="21"
+                     HorizontalAlignment="Right"/>
+          <Button x:Name="CloseButton"
+                  Content="✕"
+                  Width="48"
+                  Height="48"
+                  Padding="0"
+                  FontSize="22"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  HorizontalAlignment="Right"
+                  Margin="0,8,0,0"/>
+        </StackPanel>
+      </Grid>
+
+      <Grid Grid.Row="1"
+            ColumnDefinitions="330,1*,330"
+            Margin="0,16"
+            VerticalAlignment="Center">
+        <StackPanel Grid.Column="0"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="14">
+          <TextBlock x:Name="ArrivalLabelText"
+                     Text="地震横波"
+                     FontSize="40"
+                     FontWeight="Bold"
+                     HorizontalAlignment="Center"/>
+          <TextBlock x:Name="CountdownLabelText"
+                     Text="倒计时"
+                     FontSize="40"
+                     FontWeight="Bold"
+                     HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <Grid x:Name="CountdownRing"
+              Grid.Column="1"
+              Width="280"
+              Height="280"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center">
+          <Ellipse Width="280"
+                   Height="280"
+                   Stroke="#FFFFFF"
+                   StrokeThickness="9"/>
+          <Ellipse Width="256"
+                   Height="256"
+                   Stroke="#A9B5DF"
+                   StrokeThickness="3"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"/>
+
+          <TextBlock x:Name="CountdownMain"
+                     Text="到达"
+                     FontSize="150"
+                     FontWeight="Bold"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     TextAlignment="Center"/>
+
+          <TextBlock x:Name="SecondsText"
+                     Text="秒"
+                     FontSize="34"
+                     FontWeight="Bold"
+                     HorizontalAlignment="Left"
+                     VerticalAlignment="Bottom"/>
+        </Grid>
+
+        <StackPanel Grid.Column="2"
+                    Width="310"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="14">
+          <TextBlock x:Name="SensationText1"
+                     FontSize="40"
+                     FontWeight="Bold"
+                     TextAlignment="Center"
+                     HorizontalAlignment="Center"/>
+          <TextBlock x:Name="SensationText2"
+                     FontSize="40"
+                     FontWeight="Bold"
+                     TextAlignment="Center"
+                     HorizontalAlignment="Center"/>
+        </StackPanel>
+      </Grid>
+
+      <Grid Grid.Row="2"
+            ColumnDefinitions="1*,1*,1*,1*,1*"
+            ColumnSpacing="32"
+            VerticalAlignment="Center">
+        <StackPanel Grid.Column="0"
+                    Spacing="8">
+          <TextBlock x:Name="ShockTimeLabel"
+                     Text="发震时间"
+                     FontWeight="Bold"
+                     FontSize="28"
+                     HorizontalAlignment="Center"/>
+          <Border x:Name="ShockTimeHost"
+                  ClipToBounds="True">
+            <TextBlock x:Name="ShockTimeText"
+                       FontSize="24"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"/>
+          </Border>
+        </StackPanel>
+
+        <StackPanel Grid.Column="1"
+                    Spacing="8">
+          <TextBlock x:Name="PlaceLabel"
+                     Text="震中位置"
+                     FontWeight="Bold"
+                     FontSize="28"
+                     HorizontalAlignment="Center"/>
+          <Border x:Name="PlaceHost"
+                  ClipToBounds="True">
+            <TextBlock x:Name="PlaceText"
+                       FontSize="24"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"/>
+          </Border>
+        </StackPanel>
+
+        <StackPanel Grid.Column="2"
+                    HorizontalAlignment="Center"
+                    Spacing="8">
+          <TextBlock x:Name="DistanceLabel"
+                     Text="震中距"
+                     FontWeight="Bold"
+                     FontSize="28"
+                     HorizontalAlignment="Center"/>
+          <TextBlock x:Name="DistanceText"
+                     FontSize="24"
+                     HorizontalAlignment="Center"
+                     TextAlignment="Center"/>
+        </StackPanel>
+
+        <StackPanel Grid.Column="3"
+                    HorizontalAlignment="Center"
+                    Spacing="8">
+          <TextBlock x:Name="MagnitudeLabel"
+                     Text="地震震级"
+                     FontWeight="Bold"
+                     FontSize="28"
+                     HorizontalAlignment="Center"/>
+          <TextBlock x:Name="MagnitudeText"
+                     FontSize="24"
+                     HorizontalAlignment="Center"
+                     TextAlignment="Center"/>
+        </StackPanel>
+
+        <StackPanel Grid.Column="4"
+                    HorizontalAlignment="Center"
+                    Spacing="8">
+          <TextBlock x:Name="LocalIntensityLabel"
+                     Text="预估本地烈度"
+                     FontWeight="Bold"
+                     FontSize="28"
+                     HorizontalAlignment="Center"
+                     TextAlignment="Center"/>
+          <TextBlock x:Name="LocalIntensityText"
+                     FontSize="24"
+                     HorizontalAlignment="Center"
+                     TextAlignment="Center"/>
+        </StackPanel>
+      </Grid>
+    </Grid>
+  </Border>
+</Window>

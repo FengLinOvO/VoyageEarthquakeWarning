@@ -1,0 +1,10 @@
+bin/
+obj/
+**/bin/
+**/obj/
+**/cipx/
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo

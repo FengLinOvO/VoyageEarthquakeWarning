@@ -1,0 +1,15 @@
+id: voyage.earthquake-warning
+name: 地震预警
+description: 一个现代化UI的地震预警插件
+entranceAssembly: "Voyage.EarthquakeWarning.dll"
+url: https://github.com/FengLinOvO/VoyageEarthquakeWarning
+repoOwner: FengLinOvO
+repoName: VoyageEarthquakeWarning
+assetsRoot: main/src/EarthquakeWarning
+artifactName: Voyage.EarthquakeWarning.cipx
+tagPattern: 1.*.*.*
+version: 1.0.0.0
+apiVersion: 2.1.0.1
+author: Voyage Project
+supportedOSPlatforms:
+  - Windows
